@@ -25,6 +25,7 @@ from api.serializers import (
 
     UsuarioSerializer, 
     OcorrenciaSerializer, 
+    OcorrenciaCreateSerializer,
     CategoriaSerializer, 
     UserSerializer, 
     GroupSerializer,
@@ -131,7 +132,6 @@ class UsuarioCreate(APIView):
     """
     # Função post: Cria um novo usuário 
     def post(self, request, format = None):
-        
         u = User.objects.create(
                     username = request.data['login'], # Passamos o login
                     email = request.data['email'] # Passamos o email
@@ -140,15 +140,19 @@ class UsuarioCreate(APIView):
         u.set_password(request.data['senha'])
 
         request.data['user'] = u.id
-
         usuario = UsuarioSerializer(data = request.data)
 
         if usuario.is_valid():
             
+            try:
+                usuario.save()
+            except utils.IntegrityError:
+                u.delete()
+                return Response(usuario.errors, status=status.HTTP_400_BAD_REQUEST) #Falhou
             u.save()
-            usuario.save()
             return Response(usuario.data, status=status.HTTP_201_CREATED) #Sucedeu
 
+        u.delete()
         return Response(usuario.errors, status=status.HTTP_400_BAD_REQUEST) #Falhou
 
     permission_classes = [AllowAny] # Qualquer um pode criar usuários
@@ -300,7 +304,7 @@ class OcorrenciaCreateAPIView(CreateAPIView):
 
     '''
     queryset = Ocorrencia.objects.all()
-    serializer_class = OcorrenciaSerializer  
+    serializer_class = OcorrenciaCreateSerializer  
     permission_classes = [IsAuthenticated]
 
 # Detalhes de uma ocorrência

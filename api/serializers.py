@@ -120,6 +120,39 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
     model = Ocorrencia
     fields = ('id','data', 'hora', 'latitude', 'longitude', 'descricao', 'foto', 'validade',
                 'atendida', 'emergencia', 'vitimado', 'repetida', 'resposta', 'usuario_ID', 'tb_categoria_ID', 'tb_local_ID')
+
+class OcorrenciaCreateSerializer(serializers.ModelSerializer):
+
+  data = serializers.DateField(
+    format = 'iso-8601', 
+    input_formats = None, 
+    label = 'Data da Ocorrência',
+  )
+
+  hora = serializers.TimeField(
+    format = 'iso-8601', 
+    input_formats = None, 
+    label = 'Hora da Ocorrência',
+  )
+
+  descricao = serializers.CharField(
+    allow_blank = True, 
+    max_length = None,
+    min_length = None,
+    label = 'Descrição',
+  )
+
+  resposta = serializers.CharField(
+    allow_blank=True, 
+    min_length=None, 
+    max_length=20,
+    label = 'Resposta',
+  )
+
+  class Meta:
+    model = Ocorrencia
+    fields = ('data', 'hora', 'latitude', 'longitude', 'descricao', 'foto', 'validade',
+                'atendida', 'emergencia', 'vitimado', 'repetida', 'resposta', 'usuario_ID', 'tb_categoria_ID', 'tb_local_ID')
             
 ############################ CATEGORIA ##############################################
 class CategoriaSerializer(serializers.ModelSerializer):
