@@ -16,10 +16,10 @@ from .views import (
     UsuarioEdit,
     UsuarioCreate,
     OcorrenciaCreateAPIView,
-    OcorrenciaDetailAPIView,
-    OcorrenciaListAPIView,
-    OcorrenciaUpdateAPIView,
-    OcorrenciaDeleteAPIView,
+    OcorrenciaDetail,
+    OcorrenciaList,
+    OcorrenciaEdit,
+    OcorrenciaDelete,
     CategoriaCreateAPIView,
     CategoriaDetailAPIView,
     CategoriaListAPIView,
@@ -56,11 +56,11 @@ urlpatterns = [
     ############################ OCORRÊNCIA ##############################################
     # Acesso a lista de ocorrências e seus detalhes
     # Bem como as funções create, retrieve, edit e delete
-    url(r'^ocorrencia$', OcorrenciaListAPIView.as_view(), name="Ocorrencia List"),
+    url(r'^ocorrencia$', OcorrenciaList.as_view(), name="Ocorrencia List"),
     url(r'^ocorrencia/create/$', OcorrenciaCreateAPIView.as_view(), name= "Create Ocorrencia"),
-    url(r'^ocorrencia/(?P<pk>\d+)/$', OcorrenciaDetailAPIView.as_view(), name="Ocorrencia Detail"),
-    url(r'^ocorrencia/(?P<pk>\d+)/edit/$', OcorrenciaUpdateAPIView.as_view(), name="Ocorrencia Update"),
-    url(r'^ocorrencia/(?P<pk>\d+)/delete/$', OcorrenciaDeleteAPIView.as_view(), name="Ocorrencia Delete"),
+    url(r'^ocorrencia/(?P<pk>\d+)/$', OcorrenciaDetail.as_view(), name="Ocorrencia Detail"),
+    url(r'^ocorrencia/(?P<pk>\d+)/edit/$', OcorrenciaEdit.as_view(), name="Ocorrencia Update"),
+    url(r'^ocorrencia/(?P<pk>\d+)/delete/$', OcorrenciaDelete.as_view(), name="Ocorrencia Delete"),
 
 
     ########################### CATEGORIA ##############################################

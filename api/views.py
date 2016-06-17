@@ -42,9 +42,6 @@ from rest_framework. permissions import (
 
     )
 
-from api.permissions import (
-    UserIsOwnerOrAdmin
-    )
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 # Importando classe password, utilizada para o hashing da senha
 from api.password import password
@@ -307,51 +304,234 @@ class OcorrenciaCreateAPIView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
 # Detalhes de uma ocorrência
-# Permissão: dono da ocorrência, admin, vigilante*
-class OcorrenciaDetailAPIView(RetrieveAPIView):
+# Permissão: dono da ocorrência, admin, vigilante
+class OcorrenciaDetail(APIView):
     '''
 
     Informações das ocorrências
 
     '''
-    queryset = Ocorrencia.objects.all()
-    serializer_class = OcorrenciaSerializer
-   #permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    def get_usuario(self, pk):
+        try:
+            return Usuario.objects.get(pk = pk)
+        except Usuario.DoesNotExist:
+            raise Http404
+
+    # Função que retorna um objeto Ocorrencia
+    def get_object(self, pk):
+        try:
+            return Ocorrencia.objects.get(pk = pk)
+        except Ocorrencia.DoesNotExist:
+            raise Http404
+    # PERMISSÕES 
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated()
+
+    def check_object_permission(self, user, obj):
+        ocorrencia_id = self.get_object(obj.id)
+        usuario_id = obj.usuario_ID
+        usuario = self.get_usuario(usuario_id)      
+        return (user and user.is_authenticated() and
+          (user.is_staff or usuario.user_id == user.id))
+
+    def has_object_permission(self, request, view, obj):
+        return True
+    # FIM DAS PERMISSÕES
+
+    # Função que retorna os detalhes sobre uma ocorrência específica
+    def get(self, request, pk, format = None):
+        
+        ocorrencia = self.get_object(pk)
+        serializer = OcorrenciaSerializer(ocorrencia)
+
+        x = self.has_permission(request, OcorrenciaDetail)
+        y = self.check_object_permission(request.user, ocorrencia)
+        z = self.has_object_permission(request, OcorrenciaDetail, ocorrencia) 
+        
+        if (x and y and z):
+            return Response(serializer.data)
+        return Response(status = status.HTTP_204_NO_CONTENT)
 
 # Lista de ocorrências
-# Permissão: usuario dono da ocorrencia, ocorrências validadas*
-class OcorrenciaListAPIView(ListAPIView):
+# Permissão: usuario dono da ocorrencia, ocorrências validadas
+class OcorrenciaList(APIView):
     '''
 
     Liste as ocorrências
 
     '''
-    queryset = Ocorrencia.objects.all()
-    serializer_class = OcorrenciaSerializer
-    #permission_classes = (IsOwner,)
+    def get_usuario(self, user_id):
+        try:
+            return Usuario.objects.get(user_id= user_id)
+        except Usuario.DoesNotExist:
+            raise Http404
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated()
+
+     # Função get: Retorna todos as ocorrencias se for admin e as validadas e as do owner 
+    def get(self, request, format = None):
+        # pega user id
+        # acha usuario
+        # filtra ocorrencias com aquele id e ocorrencias validadas
+        # retorna elas
+    
+        # user eh admin
+        if (request.user.is_staff):
+            ocorrencia = Ocorrencia.objects.all()
+            serializer = OcorrenciaSerializer(ocorrencia, many = True)
+            return Response(serializer.data)
+
+        # user nao eh admin
+        elif(self.has_permission(request, OcorrenciaList)):
+            user_id = request.user.id
+            usuario = self.get_usuario(user_id)
+            ocorrencia = Ocorrencia.objects.filter(usuario_ID = usuario.id) | Ocorrencia.objects.filter(validade = True)
+            serializer = OcorrenciaSerializer(ocorrencia, many = True)
+            return Response(serializer.data)
+        return Response(status = status.HTTP_204_NO_CONTENT)
+
 
 # Editar ocorrências
 # Permissão: usuário dono da ocorrência se ela nao tiver sido validada, vigilante,admin*
-class OcorrenciaUpdateAPIView(RetrieveUpdateAPIView):
+class OcorrenciaEdit(APIView):
     '''
 
     Edite ocorrência
 
     '''
-    queryset = Ocorrencia.objects.all()
-    serializer_class = OcorrenciaSerializer
-   # permission_classes = (IsAuthenticatedOrReadOnly,)
+    def get_usuario(self, user_id):
+        try:
+            return Usuario.objects.get(user_id= user_id)
+        except Usuario.DoesNotExist:
+            raise Http404
 
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated()
+
+        # Função que retorna um objeto Usuário
+    def get_object(self, pk):
+        try:
+            return Ocorrencia.objects.get(pk = pk)
+        except Ocorrencia.DoesNotExist:
+            raise Http404
+
+
+    def get(self, request, pk, format = None):
+        # pega user id
+        # acha usuario
+        # filtra ocorrencias com aquele id e ocorrencias validadas
+        # retorna elas
+    
+        # user eh admin
+        if (request.user.is_staff):
+            ocorrencia = self.get_object(pk)
+            serializer = OcorrenciaSerializer(ocorrencia)
+            return Response(serializer.data)
+
+        # user nao eh admin
+        elif(self.has_permission(request, OcorrenciaEdit)):
+
+            user_id = request.user.id
+            usuario = self.get_usuario(user_id)
+            ocorrencia = self.get_object(pk)
+
+            if (ocorrencia.usuario_ID == usuario.id and ocorrencia.validade == False):
+                serializer = OcorrenciaSerializer(ocorrencia)
+                return Response(serializer.data)
+            return Response(status = status.HTTP_204_NO_CONTENT)
+
+    # Função que edita os valores de um usuário específico
+    def put(self, request, pk, format = None):
+        if (request.user.is_staff):
+            ocorrencia = self.get_object(pk)
+            serializer = OcorrenciaSerializer(ocorrencia)
+            return Response(serializer.data)
+
+        # user nao eh admin
+        elif(self.has_permission(request, OcorrenciaEdit)):
+
+            user_id = request.user.id
+            usuario = self.get_usuario(user_id)
+            ocorrencia = self.get_object(pk)
+
+            if (ocorrencia.usuario_ID == usuario.id and ocorrencia.validade == False):
+                ocorrencia = self.get_object(pk)
+                serializer = OcorrenciaSerializer(ocorrencia, data = request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status = status.HTTP_204_NO_CONTENT)
+    
 # Deletar ocorrência
 # Permissão: usuário dono da ocorrência se ela não tiver sido validada, vigilante, admin*
-class OcorrenciaDeleteAPIView(DestroyAPIView):
+class OcorrenciaDelete(APIView):
     '''
     Delete uma ocorrência
     '''
-    queryset = Ocorrencia.objects.all()
-    serializer_class = OcorrenciaSerializer
-   # permission_classes = (IsAuthenticatedOrReadOnly,)
+    def get_usuario(self, user_id):
+        try:
+            return Usuario.objects.get(user_id= user_id)
+        except Usuario.DoesNotExist:
+            raise Http404
 
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated()
+
+        # Função que retorna um objeto Usuário
+    def get_object(self, pk):
+        try:
+            return Ocorrencia.objects.get(pk = pk)
+        except Ocorrencia.DoesNotExist:
+            raise Http404
+
+
+    def get(self, request, pk, format = None):
+        # pega user id
+        # acha usuario
+        # filtra ocorrencias com aquele id e ocorrencias validadas
+        # retorna elas
+    
+        # user eh admin
+        if (request.user.is_staff):
+            ocorrencia = self.get_object(pk)
+            serializer = OcorrenciaSerializer(ocorrencia)
+            return Response(serializer.data)
+
+        # user nao eh admin
+        elif(self.has_permission(request, OcorrenciaEdit)):
+
+            user_id = request.user.id
+            usuario = self.get_usuario(user_id)
+            ocorrencia = self.get_object(pk)
+
+            if (ocorrencia.usuario_ID == usuario.id and ocorrencia.validade == False):
+                serializer = OcorrenciaSerializer(ocorrencia)
+                return Response(serializer.data)
+            return Response(status = status.HTTP_204_NO_CONTENT)
+
+    # Deleta um usuário e seu user associado
+    def delete(self, request, pk, format=None):
+        
+        if (request.user.is_staff):
+            ocorrencia = self.get_object(pk)
+            serializer = OcorrenciaSerializer(ocorrencia)
+            ocorrencia.delete()
+            return Response(status = status.HTTP_204_NO_CONTENT)
+    
+        # user nao eh admin
+        elif(self.has_permission(request, OcorrenciaDelete)):
+
+            user_id = request.user.id
+            usuario = self.get_usuario(user_id)
+            ocorrencia = self.get_object(pk)
+
+            if (ocorrencia.usuario_ID == usuario.id and ocorrencia.validade == False):
+                serializer = OcorrenciaSerializer(ocorrencia)
+                ocorrencia.delete()
+                return Response(status = status.HTTP_204_NO_CONTENT)
+            return Response(status = status.HTTP_204_NO_CONTENT)
 ############################ CATEGORIA ##############################################
 # CRUD Categoria
 # Só tem acesso se o usuário for Admin
