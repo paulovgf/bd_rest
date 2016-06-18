@@ -207,6 +207,7 @@ class UsuarioEdit(APIView):
     """
 
     # PERMISSÕES 
+
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated()
 
@@ -315,9 +316,24 @@ class OcorrenciaDetail(APIView):
     Informações das ocorrências
 
     '''
+
+    def is_vigilante(self, obj):
+        
+        grupo = obj.grupo_usuario 
+
+        if (grupo.id == 2): 
+            return True
+        return False
+
     def get_usuario(self, pk):
         try:
             return Usuario.objects.get(pk = pk)
+        except Usuario.DoesNotExist:
+            raise Http404
+
+    def get_usuario_vigilante(self, user_id):
+        try:
+            return Usuario.objects.get(user_id = user_id)
         except Usuario.DoesNotExist:
             raise Http404
 
@@ -332,18 +348,23 @@ class OcorrenciaDetail(APIView):
         return request.user and request.user.is_authenticated()
 
     def check_object_permission(self, user, obj):
-        ocorrencia_id = self.get_object(obj.id)
+        ocorrencia_id = self.get_object(obj.id) 
+
         usuario_id = obj.usuario_ID
-        usuario = self.get_usuario(usuario_id)      
+        usuario = self.get_usuario(usuario_id) 
+   
+        vigilante_id = user.id 
+        vigilante = self.get_usuario_vigilante(vigilante_id)
+  
         return (user and user.is_authenticated() and
-          (user.is_staff or usuario.user_id == user.id))
+          (user.is_staff or self.is_vigilante(vigilante) or usuario.user_id == user.id))
 
     def has_object_permission(self, request, view, obj):
         return True
     # FIM DAS PERMISSÕES
 
     # Função que retorna os detalhes sobre uma ocorrência específica
-    def get(self, request, pk, format = None):
+    def get (self, request, pk, format = None):
         
         ocorrencia = self.get_object(pk)
         serializer = OcorrenciaSerializer(ocorrencia)
@@ -351,7 +372,7 @@ class OcorrenciaDetail(APIView):
         x = self.has_permission(request, OcorrenciaDetail)
         y = self.check_object_permission(request.user, ocorrencia)
         z = self.has_object_permission(request, OcorrenciaDetail, ocorrencia) 
-        
+     
         if (x and y and z):
             return Response(serializer.data)
         return Response(status = status.HTTP_204_NO_CONTENT)
@@ -364,6 +385,17 @@ class OcorrenciaList(APIView):
     Liste as ocorrências
 
     '''
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated()
+
+    def is_vigilante(self, obj):
+        
+        grupo = obj.grupo_usuario 
+
+        if (grupo.id == 2): 
+            return True
+        return False
+ 
     def get_usuario(self, user_id):
         try:
             return Usuario.objects.get(user_id= user_id)
@@ -379,17 +411,17 @@ class OcorrenciaList(APIView):
         # acha usuario
         # filtra ocorrencias com aquele id e ocorrencias validadas
         # retorna elas
-    
+        user_id = request.user.id
+        usuario = self.get_usuario(user_id)
+
         # user eh admin
-        if (request.user.is_staff):
+        if (request.user.is_staff or self.is_vigilante(usuario)):
             ocorrencia = Ocorrencia.objects.all()
             serializer = OcorrenciaSerializer(ocorrencia, many = True)
             return Response(serializer.data)
 
         # user nao eh admin
         elif(self.has_permission(request, OcorrenciaList)):
-            user_id = request.user.id
-            usuario = self.get_usuario(user_id)
             ocorrencia = Ocorrencia.objects.filter(usuario_ID = usuario.id) | Ocorrencia.objects.filter(validade = True)
             serializer = OcorrenciaSerializer(ocorrencia, many = True)
             return Response(serializer.data)
@@ -404,6 +436,15 @@ class OcorrenciaEdit(APIView):
     Edite ocorrência
 
     '''
+
+    def is_vigilante(self, obj):
+        
+        grupo = obj.grupo_usuario 
+
+        if (grupo.id == 2): 
+            return True
+        return False
+
     def get_usuario(self, user_id):
         try:
             return Usuario.objects.get(user_id= user_id)
@@ -426,9 +467,11 @@ class OcorrenciaEdit(APIView):
         # acha usuario
         # filtra ocorrencias com aquele id e ocorrencias validadas
         # retorna elas
-    
+        user_id = request.user.id
+        usuario = self.get_usuario(user_id)
+
         # user eh admin
-        if (request.user.is_staff):
+        if (request.user.is_staff or self.is_vigilante(usuario)):
             ocorrencia = self.get_object(pk)
             serializer = OcorrenciaSerializer(ocorrencia)
             return Response(serializer.data)
@@ -436,8 +479,6 @@ class OcorrenciaEdit(APIView):
         # user nao eh admin
         elif(self.has_permission(request, OcorrenciaEdit)):
 
-            user_id = request.user.id
-            usuario = self.get_usuario(user_id)
             ocorrencia = self.get_object(pk)
 
             if (ocorrencia.usuario_ID == usuario.id and ocorrencia.validade == False):
@@ -447,7 +488,10 @@ class OcorrenciaEdit(APIView):
 
     # Função que edita os valores de um usuário específico
     def put(self, request, pk, format = None):
-        if (request.user.is_staff):
+        user_id = request.user.id
+        usuario = self.get_usuario(user_id) 
+     
+        if (request.user.is_staff or self.is_vigilante(usuario)):
             ocorrencia = self.get_object(pk)
             serializer = OcorrenciaSerializer(ocorrencia)
             return Response(serializer.data)
@@ -455,8 +499,6 @@ class OcorrenciaEdit(APIView):
         # user nao eh admin
         elif(self.has_permission(request, OcorrenciaEdit)):
 
-            user_id = request.user.id
-            usuario = self.get_usuario(user_id)
             ocorrencia = self.get_object(pk)
 
             if (ocorrencia.usuario_ID == usuario.id and ocorrencia.validade == False):
@@ -474,6 +516,15 @@ class OcorrenciaDelete(APIView):
     '''
     Delete uma ocorrência
     '''
+
+    def is_vigilante(self, obj):
+        
+        grupo = obj.grupo_usuario 
+
+        if (grupo.id == 2): 
+            return True
+        return False
+
     def get_usuario(self, user_id):
         try:
             return Usuario.objects.get(user_id= user_id)
@@ -496,9 +547,11 @@ class OcorrenciaDelete(APIView):
         # acha usuario
         # filtra ocorrencias com aquele id e ocorrencias validadas
         # retorna elas
-    
+        user_id = request.user.id
+        usuario = self.get_usuario(user_id)
+
         # user eh admin
-        if (request.user.is_staff):
+        if (request.user.is_staff or self.is_vigilante(usuario)):
             ocorrencia = self.get_object(pk)
             serializer = OcorrenciaSerializer(ocorrencia)
             return Response(serializer.data)
@@ -506,8 +559,6 @@ class OcorrenciaDelete(APIView):
         # user nao eh admin
         elif(self.has_permission(request, OcorrenciaEdit)):
 
-            user_id = request.user.id
-            usuario = self.get_usuario(user_id)
             ocorrencia = self.get_object(pk)
 
             if (ocorrencia.usuario_ID == usuario.id and ocorrencia.validade == False):
@@ -517,8 +568,10 @@ class OcorrenciaDelete(APIView):
 
     # Deleta um usuário e seu user associado
     def delete(self, request, pk, format=None):
-        
-        if (request.user.is_staff):
+        user_id = request.user.id
+        usuario = self.get_usuario(user_id)
+
+        if (request.user.is_staff or self.is_vigilante(usuario)):
             ocorrencia = self.get_object(pk)
             serializer = OcorrenciaSerializer(ocorrencia)
             ocorrencia.delete()
@@ -527,8 +580,6 @@ class OcorrenciaDelete(APIView):
         # user nao eh admin
         elif(self.has_permission(request, OcorrenciaDelete)):
 
-            user_id = request.user.id
-            usuario = self.get_usuario(user_id)
             ocorrencia = self.get_object(pk)
 
             if (ocorrencia.usuario_ID == usuario.id and ocorrencia.validade == False):
@@ -599,7 +650,7 @@ class CategoriaDeleteAPIView(DestroyAPIView):
 class LocalCreateAPIView(CreateAPIView):
     '''
 
-    Crie uma nova local
+    Crie uma novo local
 
     '''
     queryset = Local.objects.all()
@@ -609,7 +660,7 @@ class LocalCreateAPIView(CreateAPIView):
 class LocalDetailAPIView(RetrieveAPIView):
     '''
 
-    Informações das locals
+    Informações dos locais
 
     '''
     queryset = Local.objects.all()
@@ -619,7 +670,7 @@ class LocalDetailAPIView(RetrieveAPIView):
 class LocalListAPIView(ListAPIView):
     '''
 
-    Liste as locals
+    Liste os locais
 
     '''
     queryset = Local.objects.all()
@@ -629,7 +680,7 @@ class LocalListAPIView(ListAPIView):
 class LocalUpdateAPIView(RetrieveUpdateAPIView):
     '''
 
-    Edite uma local
+    Edite um local
 
     '''
     queryset = Local.objects.all()

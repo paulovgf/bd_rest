@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*- 
 # SERIALIZERS DA API - UNB ALERTA - REST FRAMEWORK
-
-
 # Importando os models preestabelecidos pelo Django e os models do UnB Alerta
 from usuario.models import Usuario
 from ocorrencia.models import Categoria, Ocorrencia, Local
@@ -121,6 +119,7 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
     fields = ('id','data', 'hora', 'latitude', 'longitude', 'descricao', 'foto', 'validade',
                 'atendida', 'emergencia', 'vitimado', 'repetida', 'resposta', 'usuario_ID', 'tb_categoria_ID', 'tb_local_ID')
 
+############################ OCORRÊNCIA CREATE ##############################################
 class OcorrenciaCreateSerializer(serializers.ModelSerializer):
 
   data = serializers.DateField(

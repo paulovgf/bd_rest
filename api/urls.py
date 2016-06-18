@@ -1,30 +1,34 @@
 # -*- coding: utf-8 -*- 
 # URLS DA API - UNB ALERTA - REST FRAMEWORK
-
 from django.conf.urls import url
 
 # Importando as views que serão utilizadas
 from .views import (
-
+    # USER
     UserDetailAPIView,
     UserListAPIView,
+    # GROUP
     GroupDetailAPIView,
     GroupListAPIView,
+    # USUARIO
     UsuarioList,
     UsuarioDetail,
     UsuarioDelete,
     UsuarioEdit,
     UsuarioCreate,
+    # OCORRENCIA 
     OcorrenciaCreateAPIView,
     OcorrenciaDetail,
     OcorrenciaList,
     OcorrenciaEdit,
     OcorrenciaDelete,
+    # CATEGORIA 
     CategoriaCreateAPIView,
     CategoriaDetailAPIView,
     CategoriaListAPIView,
     CategoriaUpdateAPIView,
     CategoriaDeleteAPIView,
+    # LOCAL 
     LocalCreateAPIView,
     LocalDetailAPIView,
     LocalListAPIView,
@@ -64,7 +68,7 @@ urlpatterns = [
 
 
     ########################### CATEGORIA ##############################################
-    # Acesso a lista de categorias das ocorrências e seus detalhes
+    # Acesso a lista de categorias das categorias e seus detalhes
     # Bem como as funções create, retrieve, edit e delete
     url(r'^categoria$', CategoriaListAPIView.as_view(), name="Categoria List"),
     url(r'^categoria/create/$', CategoriaCreateAPIView.as_view(), name= "Create Categoria"),
@@ -73,8 +77,8 @@ urlpatterns = [
     url(r'^categoria/(?P<pk>\d+)/delete/$', CategoriaDeleteAPIView.as_view(), name="Categoria Delete"),
     
 
-    ########################### Locais ##############################################
-    # Acesso a lista de Locals das ocorrências e seus detalhes
+    ########################### LOCAL ##################################################
+    # Acesso a lista de Locals das locais e seus detalhes
     # Bem como as funções create, retrieve, edit e delete
     url(r'^local$', LocalListAPIView.as_view(), name="Local List"),
     url(r'^local/create/$', LocalCreateAPIView.as_view(), name= "Create Local"),
